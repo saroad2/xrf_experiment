@@ -21,7 +21,9 @@ def xrf_group():
 
 
 @xrf_group.command("parse-mca")
-@click.argument("input_path", type=click.Path(dir_okay=False, path_type=Path))
+@click.argument(
+    "input_path", type=click.Path(dir_okay=False, path_type=Path, exists=True)
+)
 def parse_mca_cli(input_path: Path):
     with open(input_path, encoding=ENCODING) as input_file:
         lines = [line.replace("\n", "").strip() for line in input_file.readlines()]
@@ -48,7 +50,9 @@ def parse_mca_cli(input_path: Path):
 
 
 @xrf_group.command("maximum-candidates")
-@click.argument("input_path", type=click.Path(dir_okay=False, path_type=Path))
+@click.argument(
+    "input_path", type=click.Path(dir_okay=False, path_type=Path, exists=True)
+)
 @click.option("-n", "--neighbourhood", type=int, default=DEFAULT_NEIGHBOURHOOD)
 def maximum_candidates_cli(input_path: Path, neighbourhood: int):
     df = pd.read_csv(input_path)
@@ -62,7 +66,9 @@ def maximum_candidates_cli(input_path: Path, neighbourhood: int):
 
 
 @xrf_group.command("fit-gaussian")
-@click.argument("input_path", type=click.Path(dir_okay=False, path_type=Path))
+@click.argument(
+    "input_path", type=click.Path(dir_okay=False, path_type=Path, exists=True)
+)
 @click.option("--start-x", required=True, type=int, multiple=True)
 @click.option("--show-plot", is_flag=True, default=False)
 def fit_gaussian_cli(input_path: Path, start_x: Sequence[int], show_plot):
@@ -91,7 +97,9 @@ def fit_gaussian_cli(input_path: Path, start_x: Sequence[int], show_plot):
 
 
 @xrf_group.command("plot-data")
-@click.argument("input_path", type=click.Path(dir_okay=False, path_type=Path))
+@click.argument(
+    "input_path", type=click.Path(dir_okay=False, path_type=Path, exists=True)
+)
 @click.option("--show-local-maxima", is_flag=True, default=False)
 @click.option("--min-x", type=int)
 @click.option("--max-x", type=int)
