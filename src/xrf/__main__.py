@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from xrf.constants import CHANNEL, COUNTS_PER_SECOND, ENCODING
+from xrf.constants import CHANNEL, COUNTS_PER_SECOND, DEFAULT_NEIGHBOURHOOD, ENCODING
+from xrf.gaussian_util import extract_local_maxima_indices
 
 
 @click.group("xrf")
@@ -40,11 +41,46 @@ def parse_mca_cli(input_path: Path):
     data_frame.to_csv(input_path.with_name(f"{name}.csv"), index=False)
 
 
+@xrf_group.command("maximum-candidates")
+@click.argument("input_path", type=click.Path(dir_okay=False, path_type=Path))
+@click.option("-n", "--neighbourhood", type=int, default=DEFAULT_NEIGHBOURHOOD)
+def maximum_candidates_cli(input_path: Path, neighbourhood: int):
+    df = pd.read_csv(input_path)
+    max_indices = extract_local_maxima_indices(
+        df[COUNTS_PER_SECOND].to_numpy(), n=neighbourhood
+    )
+    name = input_path.stem.replace(" ", "_")
+    df.iloc[max_indices].to_csv(
+        input_path.with_name(f"{name}_max_candidates.csv"), index=False
+    )
+
+
 @xrf_group.command("plot-data")
 @click.argument("input_path", type=click.Path(dir_okay=False, path_type=Path))
-def plot_data_cli(input_path: Path):
+@click.option("--show-local-maxima", is_flag=True, default=False)
+@click.option("--min-x", type=int)
+@click.option("--max-x", type=int)
+@click.option("-n", "--neighbourhood", type=int, default=DEFAULT_NEIGHBOURHOOD)
+def plot_data_cli(
+    input_path: Path,
+    min_x: int,
+    max_x: int,
+    neighbourhood: int,
+    show_local_maxima: bool,
+):
     df = pd.read_csv(input_path)
-    plt.plot(df[CHANNEL], df[COUNTS_PER_SECOND])
+    x, y = df[CHANNEL].to_numpy(), df[COUNTS_PER_SECOND].to_numpy()
+    if min_x is not None:
+        x, y = x[x >= min_x], y[x >= min_x]
+    if max_x is not None:
+        x, y = x[x <= max_x], y[x <= max_x]
+    plt.plot(x, y)
+    title = "Channel to Count"
+    if show_local_maxima:
+        max_indices = extract_local_maxima_indices(y, n=neighbourhood)
+        title += f" ({len(max_indices)} local maxima)"
+        plt.scatter(x[max_indices], y[max_indices], s=5, c="red")
+    plt.title(title)
     plt.show()
 
 
