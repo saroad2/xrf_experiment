@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Sequence
 
 import click
 import matplotlib.pyplot as plt
@@ -6,7 +7,12 @@ import numpy as np
 import pandas as pd
 
 from xrf.constants import CHANNEL, COUNTS_PER_SECOND, DEFAULT_NEIGHBOURHOOD, ENCODING
-from xrf.gaussian_util import extract_local_maxima_indices
+from xrf.gaussian_util import (
+    extract_local_maxima_indices,
+    fit_gaussian,
+    gaussian,
+    trim_gaussian,
+)
 
 
 @click.group("xrf")
@@ -53,6 +59,35 @@ def maximum_candidates_cli(input_path: Path, neighbourhood: int):
     df.iloc[max_indices].to_csv(
         input_path.with_name(f"{name}_max_candidates.csv"), index=False
     )
+
+
+@xrf_group.command("fit-gaussian")
+@click.argument("input_path", type=click.Path(dir_okay=False, path_type=Path))
+@click.option("--start-x", required=True, type=int, multiple=True)
+@click.option("--show-plot", is_flag=True, default=False)
+def fit_gaussian_cli(input_path: Path, start_x: Sequence[int], show_plot):
+    df = pd.read_csv(input_path)
+    start_x = list(start_x)
+    x, y = df[CHANNEL].to_numpy(), df[COUNTS_PER_SECOND].to_numpy()
+    x, y = trim_gaussian(x, y, start_x)
+    deg_of_freedom = x.shape[0] - 3
+    res, cov = fit_gaussian(x, y, start_x)
+    error = np.sqrt(np.diag(cov))
+    y_pred = gaussian(x, *res)
+    chi2 = np.sum((y - y_pred) ** 2)
+    chi2_red = chi2 / deg_of_freedom
+    print("Result:")
+    print(res)
+    print("Error:")
+    print(error)
+    print("Covariance:")
+    print(cov)
+    print(f"{chi2=:.2e}, {deg_of_freedom=} {chi2_red=:.2e}")
+    if show_plot:
+        plt.plot(x, y, label="Raw data")
+        plt.plot(x, y_pred, label="Gaussian fit")
+        plt.legend()
+        plt.show()
 
 
 @xrf_group.command("plot-data")
