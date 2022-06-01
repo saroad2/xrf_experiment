@@ -56,9 +56,9 @@ def maximum_candidates_cli(input_path: Path, neighbourhood: int):
         df[COUNTS_PER_SECOND].to_numpy(), n=neighbourhood
     )
     name = input_path.stem.replace(" ", "_")
-    df.iloc[max_indices].to_csv(
-        input_path.with_name(f"{name}_max_candidates.csv"), index=False
-    )
+    maxima_df = df.iloc[max_indices].copy()
+    maxima_df.sort_values(by=[COUNTS_PER_SECOND], ascending=False, inplace=True)
+    maxima_df.to_csv(input_path.with_name(f"{name}_max_candidates.csv"), index=False)
 
 
 @xrf_group.command("fit-gaussian")
