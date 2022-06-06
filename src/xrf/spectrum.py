@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
 
-from xrf.constants import CHECK_POINTS
+from xrf.constants import CHECK_POINTS, PEAK_HEIGHT_THRESHOLD
 from xrf.gaussian_util import fit_gaussian, gaussian
 
 
@@ -101,7 +101,8 @@ class Spectrum:
 
     @classmethod
     def _find_peaks(cls, y: np.ndarray, n: int) -> List[int]:
-        return list(find_peaks(y, width=n, distance=CHECK_POINTS)[0])
+        min_height = PEAK_HEIGHT_THRESHOLD * y.max()
+        return list(find_peaks(y, width=n, distance=CHECK_POINTS, height=min_height)[0])
 
     @classmethod
     def _build_peak(cls, y: np.ndarray, peak_index: int):
