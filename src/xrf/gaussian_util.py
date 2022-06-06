@@ -2,13 +2,6 @@ from typing import List
 
 import numpy as np
 from scipy.optimize import curve_fit
-from scipy.signal import find_peaks
-
-from xrf.constants import EPSILON
-
-
-def extract_local_maxima_indices(x: np.ndarray, n: int):
-    return find_peaks(x, width=n, height=EPSILON)[0]
 
 
 def trim_gaussian(x: np.ndarray, y: np.ndarray, start_x: List[int]):

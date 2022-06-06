@@ -7,12 +7,9 @@ import numpy as np
 import pandas as pd
 
 from xrf.constants import CHANNEL, COUNTS_PER_SECOND, DEFAULT_NEIGHBOURHOOD, ENCODING
-from xrf.gaussian_util import (
-    extract_local_maxima_indices,
-    fit_gaussian,
-    gaussian,
-    trim_gaussian,
-)
+from xrf.gaussian_util import fit_gaussian, gaussian, trim_gaussian
+from xrf.random_util import random_color
+from xrf.spectrum import Spectrum
 
 
 @click.group("xrf")
@@ -47,22 +44,6 @@ def parse_mca_cli(input_path: Path):
     )
     name = input_path.stem.replace(" ", "_")
     data_frame.to_csv(input_path.with_name(f"{name}.csv"), index=False)
-
-
-@xrf_group.command("maximum-candidates")
-@click.argument(
-    "input_path", type=click.Path(dir_okay=False, path_type=Path, exists=True)
-)
-@click.option("-n", "--neighbourhood", type=int, default=DEFAULT_NEIGHBOURHOOD)
-def maximum_candidates_cli(input_path: Path, neighbourhood: int):
-    df = pd.read_csv(input_path)
-    max_indices = extract_local_maxima_indices(
-        df[COUNTS_PER_SECOND].to_numpy(), n=neighbourhood
-    )
-    name = input_path.stem.replace(" ", "_")
-    maxima_df = df.iloc[max_indices].copy()
-    maxima_df.sort_values(by=[COUNTS_PER_SECOND], ascending=False, inplace=True)
-    maxima_df.to_csv(input_path.with_name(f"{name}_max_candidates.csv"), index=False)
 
 
 @xrf_group.command("fit-gaussian")
@@ -120,9 +101,12 @@ def plot_data_cli(
     plt.plot(x, y)
     title = "Channel to Count"
     if show_local_maxima:
-        max_indices = extract_local_maxima_indices(y, n=neighbourhood)
-        title += f" ({len(max_indices)} local maxima)"
-        plt.scatter(x[max_indices], y[max_indices], s=5, c="red")
+        spectrum = Spectrum(x=x, y=y, n=neighbourhood)
+        title += f" ({len(spectrum.peaks)} local maxima)"
+        for peak in spectrum.peaks:
+            color = random_color()
+            plt.plot(*spectrum.trim_to_peak(peak), color=color)
+            plt.scatter(x[peak.peak_indices], y[peak.peak_indices], s=10, color=color)
     plt.title(title)
     plt.show()
 
