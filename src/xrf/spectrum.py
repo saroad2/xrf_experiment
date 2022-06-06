@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
 
+from xrf.constants import CHECK_POINTS
 from xrf.gaussian_util import fit_gaussian, gaussian
 
 
@@ -106,10 +107,17 @@ class Spectrum:
     def _build_peak(cls, y: np.ndarray, peak_index: int):
         peak_value = y[peak_index]
         end_index = peak_index + 1
-        while end_index < y.shape[0] and y[end_index] > peak_value / 2:
+        while (
+            end_index < y.shape[0] - CHECK_POINTS
+            and y[end_index : end_index + CHECK_POINTS].max() > peak_value / 2
+        ):
             end_index += 1
         start_index = peak_index - 1
-        while start_index >= 0 and y[start_index] > peak_value / 2:
+        while (
+            start_index >= CHECK_POINTS - 1
+            and y[start_index - CHECK_POINTS + 1 : start_index + 1].max()
+            > peak_value / 2
+        ):
             start_index -= 1
         return Peak(
             start_index=start_index, end_index=end_index, peak_indices=[peak_index]
