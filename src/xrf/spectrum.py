@@ -101,7 +101,7 @@ class Spectrum:
 
     @classmethod
     def _find_peaks(cls, y: np.ndarray, n: int) -> List[int]:
-        return list(find_peaks(y, width=n)[0])
+        return list(find_peaks(y, width=n, distance=CHECK_POINTS)[0])
 
     @classmethod
     def _build_peak(cls, y: np.ndarray, peak_index: int):
