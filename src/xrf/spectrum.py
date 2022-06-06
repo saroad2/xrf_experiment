@@ -2,9 +2,11 @@ from dataclasses import dataclass
 from typing import List
 
 import numpy as np
+import pandas as pd
 from scipy.signal import find_peaks
 
 from xrf.constants import EPSILON
+from xrf.gaussian_util import fit_gaussian, gaussian
 
 
 @dataclass
@@ -45,6 +47,50 @@ class Spectrum:
             self.x[peak.start_index : peak.end_index],
             self.y[peak.start_index : peak.end_index],
         )
+
+    def fit_gaussians(self):
+        results = []
+        for peak in self.peaks:
+            x, y = self.trim_to_peak(peak)
+            deg_of_freedom = x.shape[0] - 3
+            res, cov = fit_gaussian(
+                x,
+                y,
+                [peak_index - peak.start_index for peak_index in peak.peak_indices],
+            )
+            error = np.sqrt(np.diag(cov))
+            y_pred = gaussian(x, *res)
+            chi2 = np.sum((y - y_pred) ** 2)
+            chi2_red = chi2 / deg_of_freedom
+            for i in range(len(res) // 3):
+                a, mean, std = res[3 * i], res[3 * i + 1], res[3 * i + 2]
+                a_err, mean_err, std_err = (
+                    error[3 * i],
+                    error[3 * i + 1],
+                    error[3 * i + 2],
+                )
+                a_perr, mean_perr, std_perr = (
+                    (a_err / a) * 100,
+                    (mean_err / mean) * 100,
+                    (std_err / std) * 100,
+                )
+                results.append(
+                    dict(
+                        a=a,
+                        a_err=a_err,
+                        a_perr=a_perr,
+                        mean=mean,
+                        mean_err=mean_err,
+                        mean_perr=mean_perr,
+                        std=std,
+                        std_err=std_err,
+                        std_perr=std_perr,
+                        deg_of_freedom=deg_of_freedom,
+                        chi2=chi2,
+                        chi2_red=chi2_red,
+                    )
+                )
+        return pd.DataFrame(results)
 
     @classmethod
     def _build_peaks(cls, y: np.ndarray, n: int):

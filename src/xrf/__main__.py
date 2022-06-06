@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Sequence
 
 import click
 import matplotlib.pyplot as plt
@@ -7,7 +6,6 @@ import numpy as np
 import pandas as pd
 
 from xrf.constants import CHANNEL, COUNTS_PER_SECOND, DEFAULT_NEIGHBOURHOOD, ENCODING
-from xrf.gaussian_util import fit_gaussian, gaussian, trim_gaussian
 from xrf.random_util import random_color
 from xrf.spectrum import Spectrum
 
@@ -50,31 +48,15 @@ def parse_mca_cli(input_path: Path):
 @click.argument(
     "input_path", type=click.Path(dir_okay=False, path_type=Path, exists=True)
 )
-@click.option("--start-x", required=True, type=int, multiple=True)
-@click.option("--show-plot", is_flag=True, default=False)
-def fit_gaussian_cli(input_path: Path, start_x: Sequence[int], show_plot):
+@click.option("-n", "--neighbourhood", type=int, default=DEFAULT_NEIGHBOURHOOD)
+def fit_gaussian_cli(input_path: Path, neighbourhood):
     df = pd.read_csv(input_path)
-    start_x = list(start_x)
     x, y = df[CHANNEL].to_numpy(), df[COUNTS_PER_SECOND].to_numpy()
-    x, y = trim_gaussian(x, y, start_x)
-    deg_of_freedom = x.shape[0] - 3
-    res, cov = fit_gaussian(x, y, start_x)
-    error = np.sqrt(np.diag(cov))
-    y_pred = gaussian(x, *res)
-    chi2 = np.sum((y - y_pred) ** 2)
-    chi2_red = chi2 / deg_of_freedom
-    print("Result:")
-    print(res)
-    print("Error:")
-    print(error)
-    print("Covariance:")
-    print(cov)
-    print(f"{chi2=:.2e}, {deg_of_freedom=} {chi2_red=:.2e}")
-    if show_plot:
-        plt.plot(x, y, label="Raw data")
-        plt.plot(x, y_pred, label="Gaussian fit")
-        plt.legend()
-        plt.show()
+    spectrum = Spectrum(x=x, y=y, n=neighbourhood)
+    name = input_path.stem
+    spectrum.fit_gaussians().to_csv(
+        input_path.with_name(f"{name}_fit.csv"), index=False
+    )
 
 
 @xrf_group.command("plot-data")
