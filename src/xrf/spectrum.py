@@ -19,6 +19,14 @@ class Peak:
     def __contains__(self, i):
         return self.start_index <= i < self.end_index
 
+    @property
+    def right_arm(self):
+        return self.end_index - self.peak_indices[-1]
+
+    @property
+    def left_arm(self):
+        return self.peak_indices[0] - self.start_index
+
     def overlapping(self, other: "Peak") -> bool:
         if any(peak_index in self for peak_index in other.peak_indices):
             return True
@@ -96,7 +104,9 @@ class Spectrum:
     def _build_peaks(cls, y: np.ndarray, n: int):
         peaks = []
         for peak_index in cls._find_peaks(y, n):
-            peaks.append(cls._build_peak(y, peak_index))
+            peak = cls._build_peak(y, peak_index)
+            if cls._valid_peak(peak):
+                peaks.append(peak)
         return cls._merge_peaks(peaks)
 
     @classmethod
@@ -123,6 +133,14 @@ class Spectrum:
         return Peak(
             start_index=start_index, end_index=end_index, peak_indices=[peak_index]
         )
+
+    @classmethod
+    def _valid_peak(cls, peak: Peak):
+        if peak.left_arm < CHECK_POINTS:
+            return False
+        if peak.right_arm < CHECK_POINTS:
+            return False
+        return True
 
     @classmethod
     def _merge_peaks(cls, peaks: List[Peak]) -> List[Peak]:
