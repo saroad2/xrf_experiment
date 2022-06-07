@@ -1,6 +1,8 @@
 from pathlib import Path
+from typing import List
 
 import click
+import click_params as clickp
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -81,11 +83,13 @@ def fit_gaussian_cli(input_path: Path, neighbourhood):
 @click.option("--min-x", type=int)
 @click.option("--max-x", type=int)
 @click.option("-n", "--neighbourhood", type=int, default=DEFAULT_NEIGHBOURHOOD)
+@click.option("-p", "--peaks", type=clickp.IntListParamType())
 def plot_data_cli(
     input_path: Path,
     min_x: int,
     max_x: int,
     neighbourhood: int,
+    peaks: List[int],
     show_local_maxima: bool,
 ):
     df = pd.read_csv(input_path)
@@ -97,7 +101,7 @@ def plot_data_cli(
     plt.plot(x, y)
     title = "Channel to Count"
     if show_local_maxima:
-        spectrum = Spectrum(x=x, y=y, n=neighbourhood)
+        spectrum = Spectrum(x=x, y=y, n=neighbourhood, peaks_indices=peaks)
         title += f" ({len(spectrum.peaks)} local maxima)"
         for peak in spectrum.peaks:
             color = random_color()

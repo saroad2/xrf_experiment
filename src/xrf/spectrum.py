@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import pandas as pd
@@ -36,10 +36,16 @@ class Peak:
 
 
 class Spectrum:
-    def __init__(self, x: np.ndarray, y: np.ndarray, n: int):
+    def __init__(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        n: int,
+        peaks_indices: Optional[List[int]] = None,
+    ):
         self.x = x
         self.y = y
-        self.peaks = self._build_peaks(y, n)
+        self.peaks = self._build_peaks(y, n, peaks_indices)
 
     def trim_to_peak(self, peak: "Peak"):
         return (
@@ -92,9 +98,11 @@ class Spectrum:
         return pd.DataFrame(results)
 
     @classmethod
-    def _build_peaks(cls, y: np.ndarray, n: int):
+    def _build_peaks(cls, y: np.ndarray, n: int, peaks_indices: Optional[List[int]]):
         peaks = []
-        for peak_index in cls._find_peaks(y, n):
+        if peaks_indices is None or len(peaks_indices) == 0:
+            peaks_indices = cls._find_peaks(y, n)
+        for peak_index in peaks_indices:
             peak = cls._build_peak(y, peak_index)
             if cls._valid_peak(peak):
                 peaks.append(peak)
