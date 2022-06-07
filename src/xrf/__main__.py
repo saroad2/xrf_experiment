@@ -44,6 +44,20 @@ def parse_mca_cli(input_path: Path):
     data_frame.to_csv(input_path.with_name(f"{name}.csv"), index=False)
 
 
+@xrf_group.command("show-peaks")
+@click.argument(
+    "input_path", type=click.Path(dir_okay=False, path_type=Path, exists=True)
+)
+@click.option("-n", "--neighbourhood", type=int, default=DEFAULT_NEIGHBOURHOOD)
+def show_peaks_cli(input_path: Path, neighbourhood):
+    df = pd.read_csv(input_path)
+    x, y = df[CHANNEL].to_numpy(), df[COUNTS_PER_SECOND].to_numpy()
+    spectrum = Spectrum(x=x, y=y, n=neighbourhood)
+    print(f"Found {len(spectrum.peaks)} peaks:")
+    for i, peak in enumerate(spectrum.peaks, start=1):
+        print(f"{i}) {peak}")
+
+
 @xrf_group.command("fit-gaussian")
 @click.argument(
     "input_path", type=click.Path(dir_okay=False, path_type=Path, exists=True)
