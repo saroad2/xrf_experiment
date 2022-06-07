@@ -83,7 +83,7 @@ def fit_gaussian_cli(input_path: Path, neighbourhood):
 @click.argument(
     "input_path", type=click.Path(dir_okay=False, path_type=Path, exists=True)
 )
-@click.option("--show-local-maxima", is_flag=True, default=False)
+@click.option("--show-peaks/--no-show-peaks", is_flag=True, default=True)
 @click.option("--min-x", type=int)
 @click.option("--max-x", type=int)
 @click.option("-n", "--neighbourhood", type=int, default=DEFAULT_NEIGHBOURHOOD)
@@ -95,7 +95,7 @@ def plot_data_cli(
     max_x: int,
     neighbourhood: int,
     peaks: List[int],
-    show_local_maxima: bool,
+    show_peaks: bool,
     reduce_peaks: bool,
 ):
     df = pd.read_csv(input_path)
@@ -106,7 +106,7 @@ def plot_data_cli(
         x, y = x[x <= max_x], y[x <= max_x]
     plt.plot(x, y)
     title = "Channel to Count"
-    if show_local_maxima:
+    if show_peaks:
         peak_indices = None if peaks is None else np.where(np.isin(x, peaks))[0]
         spectrum = Spectrum(
             x=x,
