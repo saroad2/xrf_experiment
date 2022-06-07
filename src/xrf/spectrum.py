@@ -34,15 +34,6 @@ class Peak:
             return True
         return False
 
-    def merge(self, other: "Peak") -> "Peak":
-        start_index = min(self.start_index, other.start_index)
-        end_index = max(self.end_index, other.end_index)
-        peak_indices = self.peak_indices + other.peak_indices
-        peak_indices.sort()
-        return Peak(
-            start_index=start_index, end_index=end_index, peak_indices=peak_indices
-        )
-
 
 class Spectrum:
     def __init__(self, x: np.ndarray, y: np.ndarray, n: int):
@@ -107,7 +98,7 @@ class Spectrum:
             peak = cls._build_peak(y, peak_index)
             if cls._valid_peak(peak):
                 peaks.append(peak)
-        return cls._merge_peaks(peaks)
+        return cls._merge_peaks_list(peaks)
 
     @classmethod
     def _find_peaks(cls, y: np.ndarray, n: int) -> List[int]:
@@ -143,17 +134,27 @@ class Spectrum:
         return True
 
     @classmethod
-    def _merge_peaks(cls, peaks: List[Peak]) -> List[Peak]:
+    def _merge_peaks_list(cls, peaks: List[Peak]) -> List[Peak]:
         if len(peaks) == 0:
             return []
         new_peaks = []
         new_peak = peaks[0]
         for peak in peaks[1:]:
             if new_peak.overlapping(peak):
-                new_peak = new_peak.merge(peak)
+                new_peak = cls._merge_peaks(new_peak, peak)
             else:
                 new_peaks.append(new_peak)
                 new_peak = peak
         if new_peak is not None:
             new_peaks.append(new_peak)
         return new_peaks
+
+    @classmethod
+    def _merge_peaks(cls, peak1: Peak, peak2: Peak) -> Peak:
+        start_index = min(peak1.start_index, peak2.start_index)
+        end_index = max(peak1.end_index, peak2.end_index)
+        peak_indices = peak1.peak_indices + peak2.peak_indices
+        peak_indices.sort()
+        return Peak(
+            start_index=start_index, end_index=end_index, peak_indices=peak_indices
+        )
