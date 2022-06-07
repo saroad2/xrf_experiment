@@ -43,10 +43,13 @@ class Spectrum:
         y: np.ndarray,
         n: int,
         peaks_indices: Optional[List[int]] = None,
+        reduce_peaks: bool = True,
     ):
         self.x = x
         self.y = y
-        self.peaks = self._build_peaks(y, n, peaks_indices)
+        self.peaks = self._build_peaks(
+            y=y, n=n, peaks_indices=peaks_indices, reduce_peaks=reduce_peaks
+        )
 
     @property
     def peaks_indices(self):
@@ -105,7 +108,13 @@ class Spectrum:
         return pd.DataFrame(results)
 
     @classmethod
-    def _build_peaks(cls, y: np.ndarray, n: int, peaks_indices: Optional[List[int]]):
+    def _build_peaks(
+        cls,
+        y: np.ndarray,
+        n: int,
+        peaks_indices: Optional[List[int]],
+        reduce_peaks: bool,
+    ):
         peaks = []
         if peaks_indices is None or len(peaks_indices) == 0:
             peaks_indices = cls._find_peaks(y, n)
@@ -113,7 +122,7 @@ class Spectrum:
             peak = cls._build_peak(y, peak_index)
             if cls._valid_peak(peak):
                 peaks.append(peak)
-        return cls._merge_peaks_list(y, peaks)
+        return cls._merge_peaks_list(y, peaks, reduce_peaks=reduce_peaks)
 
     @classmethod
     def _find_peaks(cls, y: np.ndarray, n: int) -> List[int]:
@@ -149,14 +158,18 @@ class Spectrum:
         return True
 
     @classmethod
-    def _merge_peaks_list(cls, y: np.ndarray, peaks: List[Peak]) -> List[Peak]:
+    def _merge_peaks_list(
+        cls, y: np.ndarray, peaks: List[Peak], reduce_peaks: bool
+    ) -> List[Peak]:
         if len(peaks) == 0:
             return []
         new_peaks = []
         new_peak = peaks[0]
         for peak in peaks[1:]:
             if new_peak.overlapping(peak):
-                new_peak = cls._merge_peaks(y, new_peak, peak)
+                new_peak = cls._merge_peaks(
+                    y, new_peak, peak, reduce_peaks=reduce_peaks
+                )
             else:
                 new_peaks.append(new_peak)
                 new_peak = peak
@@ -165,15 +178,19 @@ class Spectrum:
         return new_peaks
 
     @classmethod
-    def _merge_peaks(cls, y: np.ndarray, peak1: Peak, peak2: Peak) -> Peak:
+    def _merge_peaks(
+        cls, y: np.ndarray, peak1: Peak, peak2: Peak, reduce_peaks: bool
+    ) -> Peak:
         start_index = min(peak1.start_index, peak2.start_index)
         end_index = max(peak1.end_index, peak2.end_index)
         peak_indices = peak1.peak_indices + peak2.peak_indices
         peak_indices.sort()
+        if reduce_peaks:
+            peak_indices = cls._remove_outliers(peak_indices, y[peak_indices])
         return Peak(
             start_index=start_index,
             end_index=end_index,
-            peak_indices=cls._remove_outliers(peak_indices, y[peak_indices]),
+            peak_indices=peak_indices,
         )
 
     @classmethod
