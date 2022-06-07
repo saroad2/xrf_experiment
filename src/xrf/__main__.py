@@ -101,7 +101,8 @@ def plot_data_cli(
     plt.plot(x, y)
     title = "Channel to Count"
     if show_local_maxima:
-        spectrum = Spectrum(x=x, y=y, n=neighbourhood, peaks_indices=peaks)
+        peak_indices = None if peaks is None else np.where(np.isin(x, peaks))[0]
+        spectrum = Spectrum(x=x, y=y, n=neighbourhood, peaks_indices=peak_indices)
         title += (
             f" ({len(spectrum.peaks)} peaks, "
             f"{len(spectrum.peaks_indices)} local maxima)"
