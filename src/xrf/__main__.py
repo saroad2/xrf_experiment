@@ -58,6 +58,10 @@ def show_peaks_cli(input_path: Path, neighbourhood):
     print(f"Found {len(spectrum.peaks)} peaks:")
     for i, peak in enumerate(spectrum.peaks, start=1):
         print(f"{i}) {peak}")
+    print(
+        "All peaks x values: "
+        f"{','.join([str(x[index]) for index in spectrum.peaks_indices])}"
+    )
 
 
 @xrf_group.command("fit-gaussian")
