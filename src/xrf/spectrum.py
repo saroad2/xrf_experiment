@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
 
-from xrf.constants import CHECK_POINTS, PEAK_HEIGHT_THRESHOLD
+from xrf.constants import CHECK_POINTS, MAX_PEAKS_STD, PEAK_HEIGHT_THRESHOLD
 from xrf.gaussian_util import fit_gaussian, gaussian
 
 
@@ -98,7 +98,7 @@ class Spectrum:
             peak = cls._build_peak(y, peak_index)
             if cls._valid_peak(peak):
                 peaks.append(peak)
-        return cls._merge_peaks_list(peaks)
+        return cls._merge_peaks_list(y, peaks)
 
     @classmethod
     def _find_peaks(cls, y: np.ndarray, n: int) -> List[int]:
@@ -134,14 +134,14 @@ class Spectrum:
         return True
 
     @classmethod
-    def _merge_peaks_list(cls, peaks: List[Peak]) -> List[Peak]:
+    def _merge_peaks_list(cls, y: np.ndarray, peaks: List[Peak]) -> List[Peak]:
         if len(peaks) == 0:
             return []
         new_peaks = []
         new_peak = peaks[0]
         for peak in peaks[1:]:
             if new_peak.overlapping(peak):
-                new_peak = cls._merge_peaks(new_peak, peak)
+                new_peak = cls._merge_peaks(y, new_peak, peak)
             else:
                 new_peaks.append(new_peak)
                 new_peak = peak
@@ -150,11 +150,23 @@ class Spectrum:
         return new_peaks
 
     @classmethod
-    def _merge_peaks(cls, peak1: Peak, peak2: Peak) -> Peak:
+    def _merge_peaks(cls, y: np.ndarray, peak1: Peak, peak2: Peak) -> Peak:
         start_index = min(peak1.start_index, peak2.start_index)
         end_index = max(peak1.end_index, peak2.end_index)
         peak_indices = peak1.peak_indices + peak2.peak_indices
         peak_indices.sort()
         return Peak(
-            start_index=start_index, end_index=end_index, peak_indices=peak_indices
+            start_index=start_index,
+            end_index=end_index,
+            peak_indices=cls._remove_outliers(peak_indices, y[peak_indices]),
         )
+
+    @classmethod
+    def _remove_outliers(cls, indices, values):
+        values_max, values_std = values.max(), values.std()
+        values_min = values_max - MAX_PEAKS_STD * values_std
+        return [
+            indices[i]
+            for i, value in enumerate(values)
+            if values_min <= value <= values_max
+        ]

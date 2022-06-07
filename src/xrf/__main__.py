@@ -88,7 +88,7 @@ def plot_data_cli(
         for peak in spectrum.peaks:
             color = random_color()
             plt.plot(*spectrum.trim_to_peak(peak), color=color)
-            plt.scatter(x[peak.peak_indices], y[peak.peak_indices], s=10, color=color)
+            plt.scatter(x[peak.peak_indices], y[peak.peak_indices], s=20, color="red")
     plt.title(title)
     plt.show()
 
