@@ -69,10 +69,19 @@ def show_peaks_cli(input_path: Path, neighbourhood):
     "input_path", type=click.Path(dir_okay=False, path_type=Path, exists=True)
 )
 @click.option("-n", "--neighbourhood", type=int, default=DEFAULT_NEIGHBOURHOOD)
-def fit_gaussian_cli(input_path: Path, neighbourhood):
+@click.option("-p", "--peaks", type=clickp.IntListParamType())
+@click.option("--reduce-peaks/--no-reduce-peaks", is_flag=True, default=True)
+def fit_gaussian_cli(input_path: Path, neighbourhood, peaks: List[int], reduce_peaks):
     df = pd.read_csv(input_path)
     x, y = df[CHANNEL].to_numpy(), df[COUNTS_PER_SECOND].to_numpy()
-    spectrum = Spectrum(x=x, y=y, n=neighbourhood)
+    peaks_indices = None if peaks is None else np.where(np.isin(x, peaks))[0]
+    spectrum = Spectrum(
+        x=x,
+        y=y,
+        n=neighbourhood,
+        peaks_indices=peaks_indices,
+        reduce_peaks=reduce_peaks,
+    )
     name = input_path.stem
     spectrum.fit_gaussians().to_csv(
         input_path.with_name(f"{name}_fit.csv"), index=False
