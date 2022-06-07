@@ -102,7 +102,10 @@ def plot_data_cli(
     title = "Channel to Count"
     if show_local_maxima:
         spectrum = Spectrum(x=x, y=y, n=neighbourhood, peaks_indices=peaks)
-        title += f" ({len(spectrum.peaks)} local maxima)"
+        title += (
+            f" ({len(spectrum.peaks)} peaks, "
+            f"{len(spectrum.peaks_indices)} local maxima)"
+        )
         for peak in spectrum.peaks:
             color = random_color()
             plt.plot(*spectrum.trim_to_peak(peak), color=color)

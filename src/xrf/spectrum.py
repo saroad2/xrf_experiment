@@ -1,3 +1,4 @@
+import itertools
 from dataclasses import dataclass
 from typing import List, Optional
 
@@ -46,6 +47,12 @@ class Spectrum:
         self.x = x
         self.y = y
         self.peaks = self._build_peaks(y, n, peaks_indices)
+
+    @property
+    def peaks_indices(self):
+        return list(
+            itertools.chain.from_iterable(peak.peak_indices for peak in self.peaks)
+        )
 
     def trim_to_peak(self, peak: "Peak"):
         return (
